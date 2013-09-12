@@ -531,30 +531,44 @@ class Core extends Extension
     private function initDefinitionsProcess()
     {
         $classes = array('document' => $this->class);
-        if (false !== $pos = strrpos($classes['document'], '\\')) {
-            $documentNamespace = substr($classes['document'], 0, $pos);
-            $documentClassName = substr($classes['document'], $pos + 1);
-            $classes['document_base']   = $documentNamespace.'\\Base\\'.$documentClassName;
-            $classes['repository']      = $documentNamespace.'\\'.$documentClassName.'Repository';
-            $classes['repository_base'] = $documentNamespace.'\\Base\\'.$documentClassName.'Repository';
-            $classes['query']           = $documentNamespace.'\\'.$documentClassName.'Query';
-            $classes['query_base']      = $documentNamespace.'\\Base\\'.$documentClassName.'Query';
-        } else {
-            $classes['document_base']   = 'Base'.$classes['document'];
-            $classes['repository']      = $classes['document'].'Repository';
-            $classes['repository_base'] = 'Base'.$classes['document'].'Repository';
-            $classes['query']           = $classes['document'].'Query';
-            $classes['query_base']      = 'Base'.$classes['document'].'Query';
-        }
+	    $subDir = false;
+	    if (false !== $pos = strrpos($classes['document'], '\\')) {
+		    $documentNamespace = substr($classes['document'], 0, $pos);
+		    $documentClassName = substr($classes['document'], $pos + 1);
+		    $classes['document_base']   = $documentNamespace.'\\Base\\'.$documentClassName;
+		    $classes['repository']      = $documentNamespace.'\\'.$documentClassName.'Repository';
+		    $classes['repository_base'] = $documentNamespace.'\\Base\\'.$documentClassName.'Repository';
+		    $classes['query']           = $documentNamespace.'\\'.$documentClassName.'Query';
+		    $classes['query_base']      = $documentNamespace.'\\Base\\'.$documentClassName.'Query';
 
-        // document
-        $dir = $this->getOption('default_output');
-        if (isset($this->configClass['output'])) {
-            $dir = $this->configClass['output'];
-        }
-        if (!$dir) {
-            throw new \RuntimeException(sprintf('The document of the class "%s" does not have output.', $this->class));
-        }
+		    //namespace is longer than one
+		    if( strpos($documentNamespace,'\\') !== false ){
+			    $nsParts = explode('\\',$documentNamespace);
+			    //remove the base namespace
+			    array_shift($nsParts);
+			    $subDir = implode(DIRECTORY_SEPARATOR,$nsParts);
+		    }
+
+	    } else {
+		    $classes['document_base']   = 'Base'.$classes['document'];
+		    $classes['repository']      = $classes['document'].'Repository';
+		    $classes['repository_base'] = 'Base'.$classes['document'].'Repository';
+		    $classes['query']           = $classes['document'].'Query';
+		    $classes['query_base']      = 'Base'.$classes['document'].'Query';
+	    }
+
+	    // document
+	    $dir = $this->getOption('default_output');
+	    if (isset($this->configClass['output'])) {
+		    $dir = $this->configClass['output'];
+	    }
+	    if (!$dir) {
+		    throw new \RuntimeException(sprintf('The document of the class "%s" does not have output.', $this->class));
+	    }
+	    //if subdir, add it
+	    if( $subDir ){
+		    $dir = rtrim($dir,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$subDir;
+	    }
         $output = new Output($dir);
 
         $this->definitions['document'] = $definition = new Definition($classes['document'], $output);
